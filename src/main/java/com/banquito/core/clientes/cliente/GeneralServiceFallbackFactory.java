@@ -3,6 +3,7 @@ package com.banquito.core.clientes.cliente;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.cloud.openfeign.FallbackFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import com.banquito.core.clientes.excepcion.ServicioExternoException;
@@ -21,20 +22,14 @@ public class GeneralServiceFallbackFactory implements FallbackFactory<GeneralSer
             }
 
             @Override
-            public void validarLocacion(String codigoLocacion) {
-                logError("validarLocacion", codigoLocacion, cause);
-                throw new ServicioExternoException("Servicio de validación no disponible", 503);
-            }
-
-            @Override
             public void validarPais(String codigoPais) {
                 logError("validarPais", codigoPais, cause);
                 throw new ServicioExternoException("Servicio de validación no disponible", 503);
             }
 
             @Override
-            public void validarProvinciaYCanton(String codigoProvincia, String codigoCanton) {
-                logError("validarProvinciaYCanton", codigoProvincia + "/" + codigoCanton, cause);
+            public ResponseEntity<Boolean> validarLocacion(String codigoProvincia, String codigoCanton, String codigoParroquia) {
+                logError("validarLocacion", codigoProvincia + "/" + codigoCanton + "/" + codigoParroquia, cause);
                 throw new ServicioExternoException("Servicio de validación no disponible", 503);
             }
 

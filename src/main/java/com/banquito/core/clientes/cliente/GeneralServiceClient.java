@@ -2,8 +2,10 @@ package com.banquito.core.clientes.cliente;
 
 import com.banquito.core.clientes.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
     name = "general-service",
@@ -16,15 +18,14 @@ public interface GeneralServiceClient {
     @GetMapping("/api/externo/sucursales/{codigoSucursal}")
     void validarSucursal(@PathVariable String codigoSucursal);
     
-    @GetMapping("/api/externo/locaciones/{codigoLocacion}")
-    void validarLocacion(@PathVariable String codigoLocacion);
-    
     @GetMapping("/api/externo/paises/{codigoPais}")
     void validarPais(@PathVariable String codigoPais);
     
-    @GetMapping("/api/externo/provincias/{codigoProvincia}/cantones/{codigoCanton}")
-    void validarProvinciaYCanton(
-        @PathVariable String codigoProvincia,
-        @PathVariable String codigoCanton
+    // ================= VALIDACIÓN DE LOCACIONES JERÁRQUICAS =================
+    @GetMapping("/locacion/validar")
+    ResponseEntity<Boolean> validarLocacion(
+        @RequestParam String codigoProvincia,
+        @RequestParam(required = false) String codigoCanton,
+        @RequestParam(required = false) String codigoParroquia
     );
 }

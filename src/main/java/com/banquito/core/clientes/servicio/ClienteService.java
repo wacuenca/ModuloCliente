@@ -1,5 +1,6 @@
 package com.banquito.core.clientes.servicio;
 
+import com.banquito.core.clientes.cliente.GeneralServiceClient;
 import com.banquito.core.clientes.controlador.dto.*;
 import com.banquito.core.clientes.controlador.mapper.*;
 import com.banquito.core.clientes.excepcion.*;
@@ -26,14 +27,16 @@ public class ClienteService {
     private final TelefonoClienteMapper telefonoMapper;
     private final DireccionesClientesMapper direccionMapper;
     private final ClienteSucursalMapper sucursalMapper;
+    private final GeneralServiceClient generalServiceClient;
 
     public ClienteService(PersonaRepositorio personaRepo,
-                         EmpresasRepositorio empresaRepo,
-                         ClientesRepositorio clienteRepo,
-                         ClienteMapper clienteMapper,
-                         @Qualifier("telefonoClienteMapperImpl") TelefonoClienteMapper telefonoMapper,
-                         @Qualifier("direccionesClientesMapperImpl") DireccionesClientesMapper direccionMapper,
-                         @Qualifier("clienteSucursalMapperImpl")ClienteSucursalMapper sucursalMapper) {
+            EmpresasRepositorio empresaRepo,
+            ClientesRepositorio clienteRepo,
+            ClienteMapper clienteMapper,
+            GeneralServiceClient generalServiceClient,
+            @Qualifier("telefonoClienteMapperImpl") TelefonoClienteMapper telefonoMapper,
+            @Qualifier("direccionesClientesMapperImpl") DireccionesClientesMapper direccionMapper,
+            @Qualifier("clienteSucursalMapperImpl") ClienteSucursalMapper sucursalMapper) {
         this.personaRepo = personaRepo;
         this.empresaRepo = empresaRepo;
         this.clienteRepo = clienteRepo;
@@ -41,6 +44,7 @@ public class ClienteService {
         this.telefonoMapper = telefonoMapper;
         this.direccionMapper = direccionMapper;
         this.sucursalMapper = sucursalMapper;
+        this.generalServiceClient = generalServiceClient;
     }
 
     // ========== MÉTODOS PARA PERSONAS ==========
@@ -48,7 +52,8 @@ public class ClienteService {
     @Transactional
     public PersonaDTO crearPersona(PersonaDTO personaDTO) {
         try {
-            log.info("Creando persona: {} {}", personaDTO.getTipoIdentificacion(), personaDTO.getNumeroIdentificacion());
+            log.info("Creando persona: {} {}", personaDTO.getTipoIdentificacion(),
+                    personaDTO.getNumeroIdentificacion());
 
             if (personaRepo.existsByTipoIdentificacionAndNumeroIdentificacion(
                     personaDTO.getTipoIdentificacion(),
@@ -73,7 +78,8 @@ public class ClienteService {
 
     public PersonaDTO obtenerPersona(String tipoIdentificacion, String numeroIdentificacion) {
         log.info("Obteniendo persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-        Personas persona = personaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+        Personas persona = personaRepo
+                .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3101));
         return clienteMapper.toPersonaDTO(persona);
     }
@@ -96,7 +102,8 @@ public class ClienteService {
     public PersonaDTO actualizarPersona(String tipoIdentificacion, String numeroIdentificacion, PersonaDTO personaDTO) {
         try {
             log.info("Actualizando persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-            Personas persona = personaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+            Personas persona = personaRepo
+                    .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3103));
 
             persona.setNombre(personaDTO.getNombre());
@@ -123,7 +130,8 @@ public class ClienteService {
     @Transactional
     public EmpresasDTO crearEmpresa(EmpresasDTO empresasDTO) {
         try {
-            log.info("Creando empresa: {} {}", empresasDTO.getTipoIdentificacion(), empresasDTO.getNumeroIdentificacion());
+            log.info("Creando empresa: {} {}", empresasDTO.getTipoIdentificacion(),
+                    empresasDTO.getNumeroIdentificacion());
 
             if (empresaRepo.existsByTipoIdentificacionAndNumeroIdentificacion(
                     empresasDTO.getTipoIdentificacion(),
@@ -169,7 +177,8 @@ public class ClienteService {
 
     public List<EmpresasDTO> buscarEmpresasPorNombre(String nombreComercial) {
         log.info("Buscando empresas por nombre comercial: {}", nombreComercial);
-        List<Empresas> empresas = empresaRepo.findByNombreComercialLikeOrderByNombreComercialAsc("%" + nombreComercial + "%");
+        List<Empresas> empresas = empresaRepo
+                .findByNombreComercialLikeOrderByNombreComercialAsc("%" + nombreComercial + "%");
 
         if (empresas.isEmpty()) {
             throw new NotFoundException("No se encontraron empresas", 3203);
@@ -182,10 +191,12 @@ public class ClienteService {
     }
 
     @Transactional
-    public EmpresasDTO actualizarEmpresa(String tipoIdentificacion, String numeroIdentificacion, EmpresasDTO empresasDTO) {
+    public EmpresasDTO actualizarEmpresa(String tipoIdentificacion, String numeroIdentificacion,
+            EmpresasDTO empresasDTO) {
         try {
             log.info("Actualizando empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
-            Empresas empresa = empresaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+            Empresas empresa = empresaRepo
+                    .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3204));
 
             empresa.setNombreComercial(empresasDTO.getNombreComercial());
@@ -209,18 +220,24 @@ public class ClienteService {
     // ========== MÉTODOS PARA CLIENTES ==========
 
     @Transactional
-    public ClienteDTO crearClientePersona(String tipoIdentificacion, String numeroIdentificacion, ClienteDTO clienteDTO) {
+    public ClienteDTO crearClientePersona(String tipoIdentificacion, String numeroIdentificacion,
+            ClienteDTO clienteDTO) {
         try {
             log.info("Creando cliente desde persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-            
+
             // Verificar si ya existe un cliente con esta identificación
-            if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)) {
+            if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion,
+                    numeroIdentificacion)) {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1301);
             }
 
             // Obtener la persona
-            Personas persona = personaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+            Personas persona = personaRepo
+                    .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3104));
+
+            // Validar nacionalidad (código de país)
+            validarPais(clienteDTO.getNacionalidad());
 
             clienteDTO.setTipoEntidad("PERSONA");
             clienteDTO.setIdEntidad(persona.getId());
@@ -244,17 +261,20 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteDTO crearClienteEmpresa(String tipoIdentificacion, String numeroIdentificacion, ClienteDTO clienteDTO) {
+    public ClienteDTO crearClienteEmpresa(String tipoIdentificacion, String numeroIdentificacion,
+            ClienteDTO clienteDTO) {
         try {
             log.info("Creando cliente desde empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
-            
+
             // Verificar si ya existe un cliente con esta identificación
-            if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)) {
+            if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion,
+                    numeroIdentificacion)) {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1302);
             }
 
             // Obtener la empresa
-            Empresas empresa = empresaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+            Empresas empresa = empresaRepo
+                    .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3205));
 
             clienteDTO.setTipoEntidad("EMPRESA");
@@ -310,7 +330,8 @@ public class ClienteService {
     public ClienteDTO actualizarCliente(String tipoIdentificacion, String numeroIdentificacion, ClienteDTO clienteDTO) {
         try {
             log.info("Actualizando cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-            Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+            Clientes cliente = clienteRepo
+                    .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3304));
 
             cliente.setTipoCliente(clienteDTO.getTipoCliente());
@@ -332,9 +353,11 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteDTO agregarTelefonoCliente(String tipoIdentificacion, String numeroIdentificacion, TelefonoClienteDTO telefonoDTO) {
+    public ClienteDTO agregarTelefonoCliente(String tipoIdentificacion, String numeroIdentificacion,
+            TelefonoClienteDTO telefonoDTO) {
         log.info("Agregando teléfono a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+        Clientes cliente = clienteRepo
+                .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3305));
 
         TelefonosClientes telefono = telefonoMapper.toTelefono(telefonoDTO);
@@ -353,8 +376,10 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteDTO eliminarTelefonoCliente(String tipoIdentificacion, String numeroIdentificacion, int indiceTelefono) {
-        Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+    public ClienteDTO eliminarTelefonoCliente(String tipoIdentificacion, String numeroIdentificacion,
+            int indiceTelefono) {
+        Clientes cliente = clienteRepo
+                .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3308));
 
         cliente.getTelefonos().get(indiceTelefono).setEstado("INACTIVO");
@@ -364,10 +389,17 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteDTO agregarDireccionCliente(String tipoIdentificacion, String numeroIdentificacion, DireccionClienteDTO direccionDTO) {
+    public ClienteDTO agregarDireccionCliente(String tipoIdentificacion, String numeroIdentificacion,
+            DireccionClienteDTO direccionDTO) {
         log.info("Agregando dirección a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+
+        // Validar provincia y cantón
+        validarProvinciaYCanton(direccionDTO.getCodigoProvincia(), direccionDTO.getCodigoCanton());
+
+        Clientes cliente = clienteRepo
+                .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3306));
+
 
         DireccionesClientes direccion = direccionMapper.toDireccion(direccionDTO);
         direccion.setFechaCreacion(LocalDate.now());
@@ -380,15 +412,19 @@ public class ClienteService {
             cliente.getDirecciones().add(direccion);
         }
 
+
+
         cliente.setFechaActualizacion(LocalDate.now());
         cliente = clienteRepo.save(cliente);
         return clienteMapper.toClienteDTO(cliente);
     }
 
     @Transactional
-    public ClienteDTO agregarSucursalCliente(String tipoIdentificacion, String numeroIdentificacion, ClienteSucursalDTO sucursalDTO) {
+    public ClienteDTO agregarSucursalCliente(String tipoIdentificacion, String numeroIdentificacion,
+            ClienteSucursalDTO sucursalDTO) {
         log.info("Agregando sucursal a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
+        Clientes cliente = clienteRepo
+                .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3307));
 
         ClientesSucursales sucursal = sucursalMapper.toClienteSucursal(sucursalDTO);
@@ -399,5 +435,32 @@ public class ClienteService {
         cliente.setFechaActualizacion(LocalDate.now());
         cliente = clienteRepo.save(cliente);
         return clienteMapper.toClienteDTO(cliente);
+    }
+
+    private void validarSucursal(String codigoSucursal) {
+        try {
+            generalServiceClient.validarSucursal(codigoSucursal);
+        } catch (Exception e) {
+            log.error("Error al validar sucursal: {}", codigoSucursal, e);
+            throw new ValidacionException("Código de sucursal no válido", 5001);
+        }
+    }
+
+    private void validarPais(String codigoPais) {
+        try {
+            generalServiceClient.validarPais(codigoPais);
+        } catch (Exception e) {
+            log.error("Error al validar país: {}", codigoPais, e);
+            throw new ValidacionException("Código de país no válido", 5002);
+        }
+    }
+
+    private void validarProvinciaYCanton(String codigoProvincia, String codigoCanton) {
+        try {
+            generalServiceClient.validarLocacion(codigoProvincia, codigoCanton, null);
+        } catch (Exception e) {
+            log.error("Error al validar provincia/cantón: {}/{}", codigoProvincia, codigoCanton, e);
+            throw new ValidacionException("Código de provincia o cantón no válido", 5003);
+        }
     }
 }

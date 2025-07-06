@@ -296,4 +296,7 @@ public class ClienteController {
         log.info("Agregando sucursal a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
         return clienteService.agregarSucursalCliente(tipoIdentificacion, numeroIdentificacion, sucursalDTO);
     }
+
+
+    
 }
