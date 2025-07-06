@@ -29,8 +29,7 @@ public class ContactosTransaccionalesClientesControlador {
 
     @GetMapping("/{idContacto}")
     public ResponseEntity<ContactoTransaccionalClienteDTO> obtenerContacto(
-            @PathVariable String idCliente,
-            @PathVariable String idContacto) {
+            @PathVariable String idCliente) {
         log.info("Obteniendo contacto transaccional para cliente ID: {}", idCliente);
         ContactoTransaccionalClienteDTO contacto = contactoService.obtenerContacto(idCliente);
         return ResponseEntity.ok(contacto);
@@ -47,7 +46,6 @@ public class ContactosTransaccionalesClientesControlador {
     @PutMapping("/{idContacto}")
     public ResponseEntity<ContactoTransaccionalClienteDTO> actualizarContacto(
             @PathVariable String idCliente,
-            @PathVariable String idContacto,
             @RequestBody ContactoTransaccionalClienteDTO dto) {
         log.info("Actualizando contacto transaccional para cliente ID: {}", idCliente);
         ContactoTransaccionalClienteDTO actualizado = contactoService.actualizarContacto(idCliente, dto);
@@ -57,7 +55,6 @@ public class ContactosTransaccionalesClientesControlador {
     @PatchMapping("/{idContacto}/estado")
     public ResponseEntity<Void> cambiarEstadoContacto(
             @PathVariable String idCliente,
-            @PathVariable String idContacto,
             @RequestParam EstadoRegistro estado) {
         log.info("Cambiando estado de contacto a {} para cliente ID: {}", estado, idCliente);
         contactoService.cambiarEstadoContacto(idCliente, estado);
@@ -66,8 +63,7 @@ public class ContactosTransaccionalesClientesControlador {
 
     @DeleteMapping("/{idContacto}")
     public ResponseEntity<Void> eliminarContacto(
-            @PathVariable String idCliente,
-            @PathVariable String idContacto) {
+            @PathVariable String idCliente) {
         log.info("Eliminando contacto transaccional para cliente ID: {}", idCliente);
         contactoService.eliminarContacto(idCliente);
         return ResponseEntity.noContent().build();

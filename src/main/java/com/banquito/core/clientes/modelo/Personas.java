@@ -17,7 +17,7 @@ import java.time.LocalDate;
 @CompoundIndex(name = "idxu_persona_tipo_numero_identificacion", 
                def = "{'tipoIdentificacion': 1, 'numeroIdentificacion': 1}", 
                unique = true)
-public class Persona {
+public class Personas {
     @Id
     private String id;
     

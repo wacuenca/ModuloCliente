@@ -5,11 +5,13 @@ import com.banquito.core.clientes.controlador.mapper.*;
 import com.banquito.core.clientes.excepcion.*;
 import com.banquito.core.clientes.modelo.*;
 import com.banquito.core.clientes.repositorio.*;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,15 +23,24 @@ public class ClienteService {
     private final EmpresasRepositorio empresaRepo;
     private final ClientesRepositorio clienteRepo;
     private final ClienteMapper clienteMapper;
+    private final TelefonoClienteMapper telefonoMapper;
+    private final DireccionesClientesMapper direccionMapper;
+    private final ClienteSucursalMapper sucursalMapper;
 
     public ClienteService(PersonaRepositorio personaRepo,
-                         EmpresasRepositorio empresaRepo,
-                         ClientesRepositorio clienteRepo,
-                         ClienteMapper clienteMapper) {
+                          EmpresasRepositorio empresaRepo,
+                          ClientesRepositorio clienteRepo,
+                          ClienteMapper clienteMapper,
+                          @Qualifier("telefonoClienteMapperImpl") TelefonoClienteMapper telefonoMapper,
+                          @Qualifier("direccionesClientesMapperImpl") DireccionesClientesMapper direccionMapper,
+                          @Qualifier("clienteSucursalMapperImpl")ClienteSucursalMapper sucursalMapper) {
         this.personaRepo = personaRepo;
         this.empresaRepo = empresaRepo;
         this.clienteRepo = clienteRepo;
         this.clienteMapper = clienteMapper;
+        this.telefonoMapper = telefonoMapper;
+        this.direccionMapper = direccionMapper;
+        this.sucursalMapper = sucursalMapper;
     }
 
     // ========== MÉTODOS PARA PERSONAS ==========
@@ -45,7 +56,7 @@ public class ClienteService {
                 throw new CreacionException("Persona ya existe", 1101);
             }
 
-            Persona persona = clienteMapper.toPersona(personaDTO);
+            Personas persona = clienteMapper.toPersona(personaDTO);
             persona.setFechaRegistro(LocalDate.now());
             persona.setFechaActualizacion(LocalDate.now());
             persona.setEstado("ACTIVO");
@@ -62,14 +73,14 @@ public class ClienteService {
 
     public PersonaDTO obtenerPersona(String tipo, String numero) {
         log.info("Obteniendo persona: {} {}", tipo, numero);
-        Persona persona = personaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
+        Personas persona = personaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
                 .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3101));
         return clienteMapper.toPersonaDTO(persona);
     }
 
     public List<PersonaDTO> buscarPersonas(String nombre) {
         log.info("Buscando personas: {}", nombre);
-        List<Persona> personas = personaRepo.findByNombreLikeOrderByNombreAsc("%" + nombre + "%");
+        List<Personas> personas = personaRepo.findByNombreLikeOrderByNombreAsc("%" + nombre + "%");
 
         if (personas.isEmpty()) {
             throw new NotFoundException("No se encontraron personas", 3102);
@@ -85,7 +96,7 @@ public class ClienteService {
     public PersonaDTO actualizarPersona(String id, PersonaDTO personaDTO) {
         try {
             log.info("Actualizando persona ID: {}", id);
-            Persona persona = personaRepo.findById(id)
+            Personas persona = personaRepo.findById(id)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3103));
 
             persona.setNombre(personaDTO.getNombre());
@@ -201,7 +212,7 @@ public class ClienteService {
     public ClienteDTO crearClientePersona(String idPersona, ClienteDTO clienteDTO) {
         try {
             log.info("Creando cliente desde persona ID: {}", idPersona);
-            Persona persona = personaRepo.findById(idPersona)
+            Personas persona = personaRepo.findById(idPersona)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3104));
 
             if (clienteRepo.existsByIdEntidadAndTipoEntidad(persona.getId(), "PERSONA")) {
@@ -313,4 +324,83 @@ public class ClienteService {
             throw new ActualizacionException("Error al actualizar cliente", 2399);
         }
     }
+
+    @Transactional
+    public ClienteDTO agregarTelefonoCliente(String idCliente, TelefonoClienteDTO telefonoDTO) {
+        log.info("Agregando teléfono a cliente ID: {}", idCliente);
+        Clientes cliente = clienteRepo.findById(idCliente)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3305));
+
+        TelefonosClientes telefono = telefonoMapper.toTelefono(telefonoDTO);
+        telefono.setFechaCreacion(LocalDate.now());
+        telefono.setFechaActualizacion(LocalDate.now());
+        telefono.setEstado("ACTIVO");
+
+        if (cliente.getTelefonos() == null) {
+            cliente.setTelefonos(new ArrayList<>());
+        }
+        cliente.getTelefonos().add(telefono);
+
+        cliente.setFechaActualizacion(LocalDate.now());
+        cliente = clienteRepo.save(cliente);
+        return clienteMapper.toClienteDTO(cliente);
+    }
+
+    @Transactional
+    public ClienteDTO eliminarTelefonoCliente(String idCliente, int indiceTelefono) {
+        Clientes cliente = clienteRepo.findById(idCliente)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3308));
+
+        cliente.getTelefonos().get(indiceTelefono).setEstado("INACTIVO");
+        cliente.setFechaActualizacion(LocalDate.now());
+        cliente = clienteRepo.save(cliente);
+        return clienteMapper.toClienteDTO(cliente);
+    }
+
+
+    @Transactional
+    public ClienteDTO agregarDireccionCliente(String idCliente, DireccionClienteDTO direccionDTO) {
+        log.info("Agregando dirección a cliente ID: {}", idCliente);
+        Clientes cliente = clienteRepo.findById(idCliente)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3306));
+
+        DireccionesClientes direccion = direccionMapper.toDireccion(direccionDTO);
+        direccion.setFechaCreacion(LocalDate.now());
+        direccion.setFechaActualizacion(LocalDate.now());
+        direccion.setEstado("ACTIVO");
+
+        if (cliente.getDirecciones() == null) {
+            cliente.setDirecciones(List.of(direccion));
+        } else {
+            cliente.getDirecciones().add(direccion);
+        }
+
+        cliente.setFechaActualizacion(LocalDate.now());
+        cliente = clienteRepo.save(cliente);
+        return clienteMapper.toClienteDTO(cliente);
+    }
+
+    @Transactional
+    public ClienteDTO agregarSucursalCliente(String idCliente, ClienteSucursalDTO sucursalDTO) {
+        log.info("Agregando sucursal a cliente ID: {}", idCliente);
+        Clientes cliente = clienteRepo.findById(idCliente)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3307));
+
+        ClientesSucursales sucursal = sucursalMapper.toClienteSucursal(sucursalDTO);
+        sucursal.setFechaCreacion(LocalDate.now());
+        sucursal.setFechaUltimaActualizacion(LocalDate.now());
+        sucursal.setEstado("ACTIVO");
+
+        if (cliente.getSucursales() == null) {
+            cliente.setSucursales(List.of(sucursal));
+        } else {
+            cliente.getSucursales().add(sucursal);
+        }
+
+        cliente.setFechaActualizacion(LocalDate.now());
+        cliente = clienteRepo.save(cliente);
+        return clienteMapper.toClienteDTO(cliente);
+    }
+
+
 }

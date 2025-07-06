@@ -8,6 +8,7 @@ import com.banquito.core.clientes.excepcion.*;
 import com.banquito.core.clientes.modelo.*;
 import com.banquito.core.clientes.repositorio.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +27,9 @@ public class AccionistaRepresentanteService {
     private final RepresentanteEmpresaMapper representanteMapper;
 
     public AccionistaRepresentanteService(AccionistasEmpresasMapper accionistasEmpresasMapper,
-                                        EmpresasRepositorio empresaRepo,
-                                        ClientesRepositorio clienteRepo,
-                                        RepresentanteEmpresaMapper representanteMapper) {
+                                          EmpresasRepositorio empresaRepo,
+                                          ClientesRepositorio clienteRepo,
+                                          @Qualifier("representanteEmpresaMapperImpl")RepresentanteEmpresaMapper representanteMapper) {
         this.accionistasEmpresasMapper = accionistasEmpresasMapper;
         this.empresaRepo = empresaRepo;
         this.clienteRepo = clienteRepo;
@@ -180,6 +181,24 @@ public class AccionistaRepresentanteService {
         }
     }
 
+    public AccionistasEmpresasDTO obtenerAccionista(String idEmpresa, String idParticipe) {
+        log.info("Obteniendo accionista {} de empresa {}", idParticipe, idEmpresa);
+
+        Empresas empresa = empresaRepo.findById(idEmpresa)
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3601));
+
+        if (empresa.getAccionistas() == null) {
+            throw new NotFoundException("Accionista no encontrado", 3602);
+        }
+
+        AccionistasEmpresas accionista = empresa.getAccionistas().stream()
+                .filter(a -> a.getIdParticipe().equals(idParticipe))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Accionista no encontrado", 3602));
+
+        return accionistasEmpresasMapper.toAccionistaDTO(accionista);
+    }
+
     // ========== MÉTODOS PARA REPRESENTANTES ==========
 
     @Transactional
@@ -322,4 +341,23 @@ public class AccionistaRepresentanteService {
             throw new ConsultaException("Error al listar representantes", 3597);
         }
     }
+
+    public RepresentanteEmpresaDTO obtenerRepresentante(String idEmpresa, String idCliente) {
+        log.info("Obteniendo representante {} de empresa {}", idCliente, idEmpresa);
+
+        Empresas empresa = empresaRepo.findById(idEmpresa)
+                .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3605));
+
+        if (empresa.getRepresentantes() == null) {
+            throw new NotFoundException("Representante no encontrado", 3606);
+        }
+
+        RepresentantesEmpresas representante = empresa.getRepresentantes().stream()
+                .filter(r -> r.getClienteId().equals(idCliente))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Representante no encontrado", 3606));
+
+        return representanteMapper.toDto(representante);
+    }
+
 }

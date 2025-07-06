@@ -1,9 +1,11 @@
 package com.banquito.core.clientes.controlador;
 
+import com.banquito.core.clientes.excepcion.NotFoundException;
 import com.banquito.core.clientes.servicio.AccionistaRepresentanteService;
 import com.banquito.core.clientes.controlador.dto.*;
 import com.banquito.core.clientes.enums.EstadoRegistro;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,6 +59,23 @@ public class AccionistaRepresentanteController {
         return servicio.listarAccionistasActivos(idEmpresa);
     }
 
+    @GetMapping("/empresas/{idEmpresa}/accionistas/{idParticipe}")
+    public ResponseEntity<AccionistasEmpresasDTO> obtenerAccionista(
+            @PathVariable String idEmpresa,
+            @PathVariable String idParticipe) {
+        try {
+            AccionistasEmpresasDTO accionista = servicio
+                    .listarAccionistasActivos(idEmpresa).stream()
+                    .filter(a -> a.getIdParticipe().equals(idParticipe))
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException("Accionista no encontrado"));
+
+            return ResponseEntity.ok(accionista);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
     // ========== ENDPOINTS PARA REPRESENTANTES ==========
 
     @PostMapping("/empresas/{idEmpresa}/representantes")
@@ -93,4 +112,22 @@ public class AccionistaRepresentanteController {
         log.info("Listando representantes activos para empresa ID: {}", idEmpresa);
         return servicio.listarRepresentantesActivos(idEmpresa);
     }
+
+    @GetMapping("/empresas/{idEmpresa}/representantes/{idCliente}")
+    public ResponseEntity<RepresentanteEmpresaDTO> obtenerRepresentante(
+            @PathVariable String idEmpresa,
+            @PathVariable String idCliente) {
+        try {
+            RepresentanteEmpresaDTO representante = servicio
+                    .listarRepresentantesActivos(idEmpresa).stream()
+                    .filter(r -> r.getIdCliente().equals(idCliente))
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException("Representante no encontrado"));
+
+            return ResponseEntity.ok(representante);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
 }

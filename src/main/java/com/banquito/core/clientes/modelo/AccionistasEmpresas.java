@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.Data;
 
-@Document(collection = "accionistas_empresas")
 @Data
 public class AccionistasEmpresas {
     @Field("id_empresa") // Si en MongoDB el campo es 'id_empresa'

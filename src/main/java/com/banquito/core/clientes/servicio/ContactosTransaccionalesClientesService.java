@@ -8,6 +8,7 @@ import com.banquito.core.clientes.modelo.Clientes;
 import com.banquito.core.clientes.modelo.ContactosTransaccionalesClientes;
 import com.banquito.core.clientes.repositorio.ClientesRepositorio;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class ContactosTransaccionalesClientesService {
 
     public ContactosTransaccionalesClientesService(
             ClientesRepositorio clienteRepo,
-            ContactoTransaccionalMapper mapper) {
+            @Qualifier("contactoTransaccionalMapperImpl")ContactoTransaccionalMapper mapper) {
         this.clienteRepo = clienteRepo;
         this.mapper = mapper;
     }
