@@ -25,5 +25,5 @@ public class ClienteDTO {
     private List<TelefonoClienteDTO> telefonos;
     private List<DireccionClienteDTO> direcciones;
     private ContactoTransaccionalClienteDTO contactoTransaccional;
-    private List<ClienteSucursalDTO> sucursales;
+
 }

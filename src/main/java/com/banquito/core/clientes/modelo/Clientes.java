@@ -24,8 +24,8 @@ public class Clientes {
     private String id;
 
     @Indexed
-    private String tipoEntidad; // PERSONA o EMPRESA
-    private String idEntidad; // Referencia a Persona o Empresa
+    private String tipoEntidad; 
+    private String idEntidad; 
     
     // Información básica
     private String nombre;
@@ -46,9 +46,6 @@ public class Clientes {
     private List<TelefonosClientes> telefonos;
     private List<DireccionesClientes> direcciones;
     private ContactosTransaccionalesClientes contactoTransaccional;
-
-    // Relación con sucursales
-    private List<ClientesSucursales> sucursales;
 
     // Auditoría
     private LocalDate fechaCreacion;

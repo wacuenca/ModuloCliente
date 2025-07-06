@@ -9,11 +9,12 @@ import java.util.Optional;
 
 @Repository
 public interface EmpresasRepositorio extends MongoRepository<Empresas, String> {
-    Optional<Empresas> findByTipoIdentificacionAndNumeroIdentificacion(String tipo, String numero);
 
     List<Empresas> findByRazonSocialLikeOrderByRazonSocialAsc(String razonSocial);
 
     List<Empresas> findByNombreComercialLikeOrderByNombreComercialAsc(String nombreComercial);
 
     boolean existsByTipoIdentificacionAndNumeroIdentificacion(String tipo, String numero);
+
+    Optional<Empresas> findByTipoIdentificacionAndNumeroIdentificacion(String tipoIdentificacion, String numeroIdentificacion);
 }
