@@ -18,4 +18,14 @@ public interface ClientesRepositorio extends MongoRepository<Clientes, String> {
     boolean existsByIdEntidadAndTipoEntidad(String idEntidad, String tipoEntidad);
 
     boolean existsByIdAndTipoEntidad(String id, String tipoEntidad);
+
+    List<Clientes> findByTipoEntidad(String tipoEntidad);
+
+    List<Clientes> findByTipoIdentificacion(String tipoIdentificacion);
+
+    long countByTipoEntidad(String tipoEntidad);
+
+    long countByTipoIdentificacion(String tipoIdentificacion);
+
+
 }

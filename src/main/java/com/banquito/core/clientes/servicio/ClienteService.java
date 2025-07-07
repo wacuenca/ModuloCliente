@@ -298,6 +298,8 @@ public class ClienteService {
         }
     }
 
+    
+
     public ClienteDTO obtenerCliente(String id) {
         log.info("Obteniendo cliente ID: {}", id);
         Clientes cliente = clienteRepo.findById(id)
@@ -400,7 +402,6 @@ public class ClienteService {
                 .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3306));
 
-
         DireccionesClientes direccion = direccionMapper.toDireccion(direccionDTO);
         direccion.setFechaCreacion(LocalDate.now());
         direccion.setFechaActualizacion(LocalDate.now());
@@ -411,8 +412,6 @@ public class ClienteService {
         } else {
             cliente.getDirecciones().add(direccion);
         }
-
-
 
         cliente.setFechaActualizacion(LocalDate.now());
         cliente = clienteRepo.save(cliente);
@@ -435,6 +434,28 @@ public class ClienteService {
         cliente.setFechaActualizacion(LocalDate.now());
         cliente = clienteRepo.save(cliente);
         return clienteMapper.toClienteDTO(cliente);
+    }
+
+    public List<ClienteDTO> listarPorTipoEntidad(String tipoEntidad) {
+        log.info("Listando clientes por tipoEntidad: {}", tipoEntidad);
+        List<Clientes> clientes = clienteRepo.findByTipoEntidad(tipoEntidad);
+        return clientes.stream().map(clienteMapper::toClienteDTO).collect(Collectors.toList());
+    }
+
+    public long contarPorTipoEntidad(String tipoEntidad) {
+        log.info("Contando clientes por tipoEntidad: {}", tipoEntidad);
+        return clienteRepo.countByTipoEntidad(tipoEntidad);
+    }
+
+    public List<ClienteDTO> listarPorTipoIdentificacion(String tipoIdentificacion) {
+        log.info("Listando clientes por tipoIdentificacion: {}", tipoIdentificacion);
+        List<Clientes> clientes = clienteRepo.findByTipoIdentificacion(tipoIdentificacion);
+        return clientes.stream().map(clienteMapper::toClienteDTO).collect(Collectors.toList());
+    }
+
+    public long contarPorTipoIdentificacion(String tipoIdentificacion) {
+        log.info("Contando clientes por tipoIdentificacion: {}", tipoIdentificacion);
+        return clienteRepo.countByTipoIdentificacion(tipoIdentificacion);
     }
 
     private void validarSucursal(String codigoSucursal) {
