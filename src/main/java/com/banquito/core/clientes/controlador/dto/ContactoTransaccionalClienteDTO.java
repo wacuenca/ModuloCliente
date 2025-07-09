@@ -9,8 +9,6 @@ import java.time.LocalDate;
 @Builder
 public class ContactoTransaccionalClienteDTO {
 
-
-    private String idCliente;
     private String telefono;
     private String correoElectronico;
     private LocalDate fechaCreacion;
