@@ -18,6 +18,9 @@ public interface ClienteMapper {
     Empresas toEmpresa(EmpresasDTO empresaDTO);
 
     // Mapeos para Cliente
+    @Mapping(target = "scoreInterno", source = "scoreInterno") 
     ClienteDTO toClienteDTO(Clientes cliente);
+
+    @Mapping(target = "scoreInterno", source = "scoreInterno") 
     Clientes toCliente(ClienteDTO clienteDTO);
 }

@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -35,6 +36,8 @@ public class Clientes {
     @Indexed
     private String numeroIdentificacion;
     
+
+    private BigDecimal scoreInterno;
     private String tipoCliente; 
     private String segmento;
     private String canalAfiliacion;

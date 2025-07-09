@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -231,6 +232,9 @@ public class ClienteService {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1301);
             }
 
+            // Validar el rango de scoreInterno
+            validarScoreInterno(clienteDTO.getScoreInterno());
+
             // Obtener la persona
             Personas persona = personaRepo
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
@@ -247,6 +251,7 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
+            cliente.setScoreInterno(clienteDTO.getScoreInterno()); // Asignar scoreInterno
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
@@ -285,6 +290,7 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
+            cliente.setScoreInterno(clienteDTO.getScoreInterno()); // Asignar scoreInterno
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
@@ -304,14 +310,18 @@ public class ClienteService {
         log.info("Obteniendo cliente ID: {}", id);
         Clientes cliente = clienteRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3301));
-        return clienteMapper.toClienteDTO(cliente);
+        ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
+        clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
+        return clienteDTO;
     }
 
     public ClienteDTO obtenerClientePorIdentificacion(String tipo, String numero) {
         log.info("Obteniendo cliente: {} {}", tipo, numero);
         Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3302));
-        return clienteMapper.toClienteDTO(cliente);
+        ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
+        clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
+        return clienteDTO;
     }
 
     public List<ClienteDTO> buscarClientes(String nombre) {
@@ -324,7 +334,11 @@ public class ClienteService {
 
         return clientes.stream()
                 .limit(100)
-                .map(clienteMapper::toClienteDTO)
+                .map(cliente -> {
+                    ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
+                    clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
+                    return clienteDTO;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -336,11 +350,15 @@ public class ClienteService {
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3304));
 
+            // Validar el rango de scoreInterno
+            validarScoreInterno(clienteDTO.getScoreInterno());
+
             cliente.setTipoCliente(clienteDTO.getTipoCliente());
             cliente.setSegmento(clienteDTO.getSegmento());
             cliente.setCanalAfiliacion(clienteDTO.getCanalAfiliacion());
             cliente.setComentarios(clienteDTO.getComentarios());
             cliente.setEstado(clienteDTO.getEstado());
+            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
 
             cliente = clienteRepo.save(cliente);
@@ -482,6 +500,13 @@ public class ClienteService {
         } catch (Exception e) {
             log.error("Error al validar provincia/cantón: {}/{}", codigoProvincia, codigoCanton, e);
             throw new ValidacionException("Código de provincia o cantón no válido", 5003);
+        }
+    }
+
+    // Método privado para validar el rango de scoreInterno
+    private void validarScoreInterno(BigDecimal scoreInterno) {
+        if (scoreInterno == null || scoreInterno.compareTo(BigDecimal.ONE) < 0 || scoreInterno.compareTo(new BigDecimal(1000)) > 0) {
+            throw new ValidacionException("El scoreInterno debe estar entre 1 y 1000", 5004);
         }
     }
 }

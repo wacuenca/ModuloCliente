@@ -3,6 +3,7 @@ package com.banquito.core.clientes.controlador.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,6 +14,7 @@ public class ClienteDTO {
     private String tipoEntidad; 
     private String idEntidad;
     private String nombre;
+    private BigDecimal scoreInterno;
     private String nacionalidad;
     private String tipoIdentificacion;
     private String numeroIdentificacion;
