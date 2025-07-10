@@ -496,14 +496,21 @@ public class ClienteService {
 
     private void validarProvinciaYCanton(String codigoProvincia, String codigoCanton) {
         try {
-            generalServiceClient.validarLocacion(codigoProvincia, codigoCanton, null);
+            String provinciaSanitizada = (codigoProvincia == null || codigoProvincia.isBlank()) ? null : codigoProvincia;
+            String cantonSanitizado = (codigoCanton == null || codigoCanton.isBlank()) ? null : codigoCanton;
+
+            if (provinciaSanitizada == null) {
+                throw new ValidacionException("El código de provincia es obligatorio", 5005);
+            }
+
+            generalServiceClient.validarLocacion(provinciaSanitizada, cantonSanitizado, null);
         } catch (Exception e) {
             log.error("Error al validar provincia/cantón: {}/{}", codigoProvincia, codigoCanton, e);
             throw new ValidacionException("Código de provincia o cantón no válido", 5003);
         }
     }
 
-    // Método privado para validar el rango de scoreInterno
+    // Metodo privado para validar el rango de scoreInterno
     private void validarScoreInterno(BigDecimal scoreInterno) {
         if (scoreInterno == null || scoreInterno.compareTo(BigDecimal.ONE) < 0 || scoreInterno.compareTo(new BigDecimal(1000)) > 0) {
             throw new ValidacionException("El scoreInterno debe estar entre 1 y 1000", 5004);
