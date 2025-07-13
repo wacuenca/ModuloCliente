@@ -1,12 +1,16 @@
 package com.banquito.core.clientes.servicio;
 
+import com.banquito.core.clientes.cliente.CuentasServiceClient;
+import com.banquito.core.clientes.cliente.CuentasServiceClient.CuentasClientesSolicitudDTO;
 import com.banquito.core.clientes.cliente.GeneralServiceClient;
 import com.banquito.core.clientes.controlador.dto.*;
 import com.banquito.core.clientes.controlador.mapper.*;
 import com.banquito.core.clientes.excepcion.*;
 import com.banquito.core.clientes.modelo.*;
 import com.banquito.core.clientes.repositorio.*;
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,11 @@ public class ClienteService {
     private final DireccionesClientesMapper direccionMapper;
     private final ClienteSucursalMapper sucursalMapper;
     private final GeneralServiceClient generalServiceClient;
+    private final CuentasServiceClient cuentasServiceClient;
+    
+    // ID de cuenta maestra configurable
+    @Value("${cuentas.cuenta-maestra.id-ahorros:1}")
+    private Integer idCuentaMaestraAhorros;
 
     public ClienteService(PersonaRepositorio personaRepo,
             EmpresasRepositorio empresaRepo,
@@ -37,7 +46,8 @@ public class ClienteService {
             GeneralServiceClient generalServiceClient,
             @Qualifier("telefonoClienteMapperImpl") TelefonoClienteMapper telefonoMapper,
             @Qualifier("direccionesClientesMapperImpl") DireccionesClientesMapper direccionMapper,
-            @Qualifier("clienteSucursalMapperImpl") ClienteSucursalMapper sucursalMapper) {
+            @Qualifier("clienteSucursalMapperImpl") ClienteSucursalMapper sucursalMapper,
+            CuentasServiceClient cuentasServiceClient) {
         this.personaRepo = personaRepo;
         this.empresaRepo = empresaRepo;
         this.clienteRepo = clienteRepo;
@@ -46,6 +56,7 @@ public class ClienteService {
         this.direccionMapper = direccionMapper;
         this.sucursalMapper = sucursalMapper;
         this.generalServiceClient = generalServiceClient;
+        this.cuentasServiceClient = cuentasServiceClient;
     }
 
     // ========== MÉTODOS PARA PERSONAS ==========
@@ -226,21 +237,17 @@ public class ClienteService {
         try {
             log.info("Creando cliente desde persona: {} {}", tipoIdentificacion, numeroIdentificacion);
 
-            // Verificar si ya existe un cliente con esta identificación
             if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion,
                     numeroIdentificacion)) {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1301);
             }
 
-            // Validar el rango de scoreInterno
             validarScoreInterno(clienteDTO.getScoreInterno());
 
-            // Obtener la persona
             Personas persona = personaRepo
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3104));
 
-            // Validar nacionalidad (código de país)
             validarPais(clienteDTO.getNacionalidad());
 
             clienteDTO.setTipoEntidad("PERSONA");
@@ -251,10 +258,14 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
-            cliente.setScoreInterno(clienteDTO.getScoreInterno()); // Asignar scoreInterno
+            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
+            
+            // Llamada al servicio de cuentas para creación automática
+            crearCuentaParaCliente(cliente);
+            
             return clienteMapper.toClienteDTO(cliente);
         } catch (NotFoundException | CreacionException e) {
             log.error("Error al crear cliente persona: {}", e.getMessage());
@@ -265,19 +276,64 @@ public class ClienteService {
         }
     }
 
+    /**
+     * Método para crear cuenta automáticamente cuando se crea un cliente
+     */
+    private void crearCuentaParaCliente(Clientes cliente) {
+        try {
+            log.info("Iniciando creación de cuenta automática para cliente ID: {}", cliente.getId());
+            
+            // Validar que el cliente tenga ID
+            if (cliente.getId() == null || cliente.getId().trim().isEmpty()) {
+                throw new IllegalArgumentException("Cliente ID es requerido para crear cuenta");
+            }
+
+            // ID de cuenta maestra fijo
+            Integer idCuentaMaestra = 1;
+
+            // Construir el DTO correcto que coincide con CuentasClientesSolicitudDTO
+            CuentasServiceClient.CuentasClientesSolicitudDTO request = CuentasServiceClient.CuentasClientesSolicitudDTO.builder()
+                .idCuenta(idCuentaMaestra)  // ID de la cuenta maestra fijo
+                .idCliente(cliente.getId()) // ID del cliente
+                .build();
+
+            log.info("Enviando solicitud para crear cuenta automática - Cliente: {}, Cuenta Maestra: {}", 
+                    cliente.getId(), idCuentaMaestra);
+
+            // Llamar al microservicio de cuentas
+            var response = cuentasServiceClient.crearCuentaAutomatica(request);
+            
+            if (response != null && response.getBody() != null) {
+                log.info("Cuenta creada exitosamente para cliente ID: {} - Número de cuenta: {}", 
+                        cliente.getId(), response.getBody().getNumeroCuenta());
+            } else {
+                log.warn("Respuesta vacía del servicio de cuentas para cliente ID: {}", cliente.getId());
+            }
+
+        } catch (FeignException e) {
+            log.error("Error al comunicarse con servicio de cuentas. Status: {}, Message: {}, Cliente: {}", 
+                     e.status(), e.getMessage(), cliente.getId());
+            throw new ServicioExternoException("Error al crear cuenta: " + e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            log.error("Error en validación de datos para cliente ID {}: {}", cliente.getId(), e.getMessage());
+            throw new CreacionException("Datos inválidos para la creación de cuenta: " + e.getMessage(), 1400);
+        } catch (Exception e) {
+            log.error("Error inesperado al crear cuenta para cliente ID: {}", cliente.getId(), e);
+            throw new CreacionException("Error inesperado al crear cuenta automática", 1499);
+        }
+    }
+
     @Transactional
     public ClienteDTO crearClienteEmpresa(String tipoIdentificacion, String numeroIdentificacion,
             ClienteDTO clienteDTO) {
         try {
             log.info("Creando cliente desde empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
 
-            // Verificar si ya existe un cliente con esta identificación
             if (clienteRepo.existsByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion,
                     numeroIdentificacion)) {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1302);
             }
 
-            // Obtener la empresa
             Empresas empresa = empresaRepo
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3205));
@@ -290,10 +346,14 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
-            cliente.setScoreInterno(clienteDTO.getScoreInterno()); // Asignar scoreInterno
+            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
+            
+            // Crear cuenta cliente automáticamente
+            crearCuentaParaCliente(cliente);
+
             return clienteMapper.toClienteDTO(cliente);
         } catch (NotFoundException | CreacionException e) {
             log.error("Error al crear cliente empresa: {}", e.getMessage());
@@ -303,8 +363,6 @@ public class ClienteService {
             throw new CreacionException("Error al crear cliente empresa", 1398);
         }
     }
-
-    
 
     public ClienteDTO obtenerCliente(String id) {
         log.info("Obteniendo cliente ID: {}", id);
@@ -324,6 +382,8 @@ public class ClienteService {
         return clienteDTO;
     }
 
+    private static final String CLIENTE_NO_ENCONTRADO = "Cliente no encontrado";
+
     public List<ClienteDTO> buscarClientes(String nombre) {
         log.info("Buscando clientes: {}", nombre);
         List<Clientes> clientes = clienteRepo.findByNombreLikeOrderByNombreAsc("%" + nombre + "%");
@@ -336,10 +396,10 @@ public class ClienteService {
                 .limit(100)
                 .map(cliente -> {
                     ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
-                    clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
+                    clienteDTO.setScoreInterno(cliente.getScoreInterno());
                     return clienteDTO;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
@@ -510,7 +570,7 @@ public class ClienteService {
         }
     }
 
-    // Metodo privado para validar el rango de scoreInterno
+    // Método privado para validar el rango de scoreInterno
     private void validarScoreInterno(BigDecimal scoreInterno) {
         if (scoreInterno == null || scoreInterno.compareTo(BigDecimal.ONE) < 0 || scoreInterno.compareTo(new BigDecimal(1000)) > 0) {
             throw new ValidacionException("El scoreInterno debe estar entre 1 y 1000", 5004);
