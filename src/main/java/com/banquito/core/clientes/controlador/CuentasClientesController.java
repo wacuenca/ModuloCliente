@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/cuentas-clientes")
+@RequestMapping("/api/v1")
 @Tag(name = "Cuentas Clientes", description = "Gestión de cuentas de clientes a través del microservicio de cuentas")
 public class CuentasClientesController {
 
@@ -30,8 +30,7 @@ public class CuentasClientesController {
         this.cuentasClientesService = cuentasClientesService;
     }
 
-    @PostMapping("/crear-ahorros/{cedulaCliente}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/clientes/{cedulaCliente}/cuentas/ahorros")
     @Operation(summary = "Crear cuenta de ahorros", description = "Crea una cuenta de ahorros para un cliente usando la cuenta maestra predeterminada")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cuenta creada exitosamente"),
@@ -42,14 +41,11 @@ public class CuentasClientesController {
     public ResponseEntity<CuentasClientesRespuestaDTO> crearCuentaAhorros(
             @PathVariable String cedulaCliente) {
         log.info("Solicitud para crear cuenta de ahorros para cliente: {}", cedulaCliente);
-        
         CuentasClientesRespuestaDTO cuenta = cuentasClientesService.crearCuentaAhorros(cedulaCliente);
-        
         return ResponseEntity.status(HttpStatus.CREATED).body(cuenta);
     }
 
-    @PostMapping("/crear/{idCuentaMaestra}/{cedulaCliente}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/clientes/{cedulaCliente}/cuentas/{idCuentaMaestra}")
     @Operation(summary = "Crear cuenta específica", description = "Crea una cuenta para un cliente con un tipo específico de cuenta maestra")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cuenta creada exitosamente"),
@@ -58,16 +54,14 @@ public class CuentasClientesController {
             @ApiResponse(responseCode = "503", description = "Servicio de cuentas no disponible")
     })
     public ResponseEntity<CuentasClientesRespuestaDTO> crearCuentaCliente(
-            @PathVariable Integer idCuentaMaestra,
-            @PathVariable String cedulaCliente) {
+            @PathVariable String cedulaCliente,
+            @PathVariable Integer idCuentaMaestra) {
         log.info("Solicitud para crear cuenta tipo {} para cliente: {}", idCuentaMaestra, cedulaCliente);
-        
         CuentasClientesRespuestaDTO cuenta = cuentasClientesService.crearCuentaCliente(idCuentaMaestra, cedulaCliente);
-        
         return ResponseEntity.status(HttpStatus.CREATED).body(cuenta);
     }
 
-    @GetMapping("/{idCuentaCliente}")
+    @GetMapping("/cuentas/{idCuentaCliente}")
     @Operation(summary = "Obtener cuenta cliente", description = "Obtiene los datos de una cuenta cliente por su ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
@@ -77,9 +71,7 @@ public class CuentasClientesController {
     public ResponseEntity<CuentasClientesRespuestaDTO> obtenerCuentaCliente(
             @PathVariable Integer idCuentaCliente) {
         log.info("Solicitud para obtener cuenta cliente con ID: {}", idCuentaCliente);
-        
         CuentasClientesRespuestaDTO cuenta = cuentasClientesService.obtenerCuentaCliente(idCuentaCliente);
-        
         return ResponseEntity.ok(cuenta);
     }
 }
