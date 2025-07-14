@@ -1,7 +1,6 @@
 package com.banquito.core.clientes.servicio;
 
 import com.banquito.core.clientes.cliente.CuentasServiceClient;
-import com.banquito.core.clientes.cliente.CuentasServiceClient.CuentasClientesSolicitudDTO;
 import com.banquito.core.clientes.cliente.GeneralServiceClient;
 import com.banquito.core.clientes.controlador.dto.*;
 import com.banquito.core.clientes.controlador.mapper.*;
@@ -279,6 +278,7 @@ public class ClienteService {
     /**
      * Método para crear cuenta automáticamente cuando se crea un cliente
      */
+    @Transactional
     private void crearCuentaParaCliente(Clientes cliente) {
         try {
             log.info("Iniciando creación de cuenta automática para cliente ID: {}", cliente.getId());
@@ -288,37 +288,38 @@ public class ClienteService {
                 throw new IllegalArgumentException("Cliente ID es requerido para crear cuenta");
             }
 
-            // ID de cuenta maestra fijo
-            Integer idCuentaMaestra = 1;
+            // ID de cuenta maestra fijo como especificado
+            Integer idCuentaMaestra = 27;
 
-            // Construir el DTO correcto que coincide con CuentasClientesSolicitudDTO
+            // Construir el DTO con la cédula del cliente (no el ID interno)
             CuentasServiceClient.CuentasClientesSolicitudDTO request = CuentasServiceClient.CuentasClientesSolicitudDTO.builder()
                 .idCuenta(idCuentaMaestra)  // ID de la cuenta maestra fijo
-                .idCliente(cliente.getId()) // ID del cliente
+                .idCliente(cliente.getNumeroIdentificacion()) // Usar la cédula del cliente, no el ID interno
                 .build();
 
-            log.info("Enviando solicitud para crear cuenta automática - Cliente: {}, Cuenta Maestra: {}", 
-                    cliente.getId(), idCuentaMaestra);
+            log.info("Enviando solicitud para crear cuenta automática - Cliente cédula: {}, Cuenta Maestra: {}", 
+                    cliente.getNumeroIdentificacion(), idCuentaMaestra);
 
             // Llamar al microservicio de cuentas
             var response = cuentasServiceClient.crearCuentaAutomatica(request);
             
             if (response != null && response.getBody() != null) {
-                log.info("Cuenta creada exitosamente para cliente ID: {} - Número de cuenta: {}", 
-                        cliente.getId(), response.getBody().getNumeroCuenta());
+                var cuentaCreada = response.getBody();
+                log.info("Cuenta creada exitosamente para cliente cédula: {} - Número de cuenta: {}", 
+                        cliente.getNumeroIdentificacion(), cuentaCreada.getNumeroCuenta());
             } else {
-                log.warn("Respuesta vacía del servicio de cuentas para cliente ID: {}", cliente.getId());
+                log.warn("Respuesta vacía del servicio de cuentas para cliente cédula: {}", cliente.getNumeroIdentificacion());
             }
 
         } catch (FeignException e) {
             log.error("Error al comunicarse con servicio de cuentas. Status: {}, Message: {}, Cliente: {}", 
-                     e.status(), e.getMessage(), cliente.getId());
+                     e.status(), e.getMessage(), cliente.getNumeroIdentificacion());
             throw new ServicioExternoException("Error al crear cuenta: " + e.getMessage(), e);
         } catch (IllegalArgumentException e) {
-            log.error("Error en validación de datos para cliente ID {}: {}", cliente.getId(), e.getMessage());
+            log.error("Error en validación de datos para cliente cédula {}: {}", cliente.getNumeroIdentificacion(), e.getMessage());
             throw new CreacionException("Datos inválidos para la creación de cuenta: " + e.getMessage(), 1400);
         } catch (Exception e) {
-            log.error("Error inesperado al crear cuenta para cliente ID: {}", cliente.getId(), e);
+            log.error("Error inesperado al crear cuenta para cliente cédula: {}", cliente.getNumeroIdentificacion(), e);
             throw new CreacionException("Error inesperado al crear cuenta automática", 1499);
         }
     }
@@ -381,8 +382,6 @@ public class ClienteService {
         clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
         return clienteDTO;
     }
-
-    private static final String CLIENTE_NO_ENCONTRADO = "Cliente no encontrado";
 
     public List<ClienteDTO> buscarClientes(String nombre) {
         log.info("Buscando clientes: {}", nombre);
