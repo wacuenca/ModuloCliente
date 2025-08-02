@@ -36,8 +36,6 @@ public class Clientes {
     @Indexed
     private String numeroIdentificacion;
     
-
-    private BigDecimal scoreInterno;
     private String tipoCliente; 
     private String segmento;
     private String canalAfiliacion;

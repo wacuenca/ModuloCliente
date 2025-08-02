@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +31,17 @@ public class ClienteService {
     private final ClienteSucursalMapper sucursalMapper;
     private final GeneralServiceClient generalServiceClient;
     private final CuentasServiceClient cuentasServiceClient;
+    private final CuentasClientesService cuentasClientesService;
     
     // ID de cuenta maestra configurable
     @Value("${cuentas.cuenta-maestra.id-ahorros:1}")
     private Integer idCuentaMaestraAhorros;
+
+    // Define constants for repeated strings
+    private static final String ACTIVO = "ACTIVO";
+    private static final String PERSONA_NO_ENCONTRADA = "Persona no encontrada";
+    private static final String EMPRESA_NO_ENCONTRADA = "Empresa no encontrada";
+    private static final String CLIENTE_NO_ENCONTRADO = "Cliente no encontrado";
 
     public ClienteService(PersonaRepositorio personaRepo,
             EmpresasRepositorio empresaRepo,
@@ -46,7 +51,8 @@ public class ClienteService {
             @Qualifier("telefonoClienteMapperImpl") TelefonoClienteMapper telefonoMapper,
             @Qualifier("direccionesClientesMapperImpl") DireccionesClientesMapper direccionMapper,
             @Qualifier("clienteSucursalMapperImpl") ClienteSucursalMapper sucursalMapper,
-            CuentasServiceClient cuentasServiceClient) {
+            CuentasServiceClient cuentasServiceClient,
+            CuentasClientesService cuentasClientesService) {
         this.personaRepo = personaRepo;
         this.empresaRepo = empresaRepo;
         this.clienteRepo = clienteRepo;
@@ -56,6 +62,7 @@ public class ClienteService {
         this.sucursalMapper = sucursalMapper;
         this.generalServiceClient = generalServiceClient;
         this.cuentasServiceClient = cuentasServiceClient;
+        this.cuentasClientesService = cuentasClientesService;
     }
 
     // ========== MÉTODOS PARA PERSONAS ==========
@@ -91,7 +98,7 @@ public class ClienteService {
         log.info("Obteniendo persona: {} {}", tipoIdentificacion, numeroIdentificacion);
         Personas persona = personaRepo
                 .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
-                .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3101));
+                .orElseThrow(() -> new NotFoundException(PERSONA_NO_ENCONTRADA, 3101));
         return clienteMapper.toPersonaDTO(persona);
     }
 
@@ -168,7 +175,7 @@ public class ClienteService {
     public EmpresasDTO obtenerEmpresa(String tipo, String numero) {
         log.info("Obteniendo empresa: {} {}", tipo, numero);
         Empresas empresa = empresaRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
-                .orElseThrow(() -> new NotFoundException("Empresa no encontrada", 3201));
+                .orElseThrow(() -> new NotFoundException(EMPRESA_NO_ENCONTRADA, 3201));
         return clienteMapper.toEmpresaDTO(empresa);
     }
 
@@ -241,8 +248,6 @@ public class ClienteService {
                 throw new CreacionException("Ya existe un cliente con esta identificación", 1301);
             }
 
-            validarScoreInterno(clienteDTO.getScoreInterno());
-
             Personas persona = personaRepo
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Persona no encontrada", 3104));
@@ -257,7 +262,6 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
-            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
@@ -347,40 +351,32 @@ public class ClienteService {
             clienteDTO.setFechaCreacion(LocalDate.now());
 
             Clientes cliente = clienteMapper.toCliente(clienteDTO);
-            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
             cliente.setEstado("ACTIVO");
             cliente = clienteRepo.save(cliente);
             
             // Crear cuenta cliente automáticamente
-            crearCuentaParaCliente(cliente);
+            cuentasClientesService.crearCuentaAhorros(cliente.getNumeroIdentificacion());
 
             return clienteMapper.toClienteDTO(cliente);
-        } catch (NotFoundException | CreacionException e) {
-            log.error("Error al crear cliente empresa: {}", e.getMessage());
-            throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al crear cliente empresa", e);
-            throw new CreacionException("Error al crear cliente empresa", 1398);
+            log.error("Error al crear cliente empresa: {}", e.getMessage());
+            throw e; 
         }
     }
 
     public ClienteDTO obtenerCliente(String id) {
         log.info("Obteniendo cliente ID: {}", id);
         Clientes cliente = clienteRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3301));
-        ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
-        clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
-        return clienteDTO;
+                .orElseThrow(() -> new NotFoundException(CLIENTE_NO_ENCONTRADO, 3301));
+        return clienteMapper.toClienteDTO(cliente);
     }
 
     public ClienteDTO obtenerClientePorIdentificacion(String tipo, String numero) {
         log.info("Obteniendo cliente: {} {}", tipo, numero);
         Clientes cliente = clienteRepo.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3302));
-        ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
-        clienteDTO.setScoreInterno(cliente.getScoreInterno()); 
-        return clienteDTO;
+        return clienteMapper.toClienteDTO(cliente);
     }
 
     public List<ClienteDTO> buscarClientes(String nombre) {
@@ -393,11 +389,7 @@ public class ClienteService {
 
         return clientes.stream()
                 .limit(100)
-                .map(cliente -> {
-                    ClienteDTO clienteDTO = clienteMapper.toClienteDTO(cliente);
-                    clienteDTO.setScoreInterno(cliente.getScoreInterno());
-                    return clienteDTO;
-                })
+                .map(clienteMapper::toClienteDTO)
                 .toList();
     }
 
@@ -409,15 +401,11 @@ public class ClienteService {
                     .findByTipoIdentificacionAndNumeroIdentificacion(tipoIdentificacion, numeroIdentificacion)
                     .orElseThrow(() -> new NotFoundException("Cliente no encontrado", 3304));
 
-            // Validar el rango de scoreInterno
-            validarScoreInterno(clienteDTO.getScoreInterno());
-
             cliente.setTipoCliente(clienteDTO.getTipoCliente());
             cliente.setSegmento(clienteDTO.getSegmento());
             cliente.setCanalAfiliacion(clienteDTO.getCanalAfiliacion());
             cliente.setComentarios(clienteDTO.getComentarios());
             cliente.setEstado(clienteDTO.getEstado());
-            cliente.setScoreInterno(clienteDTO.getScoreInterno());
             cliente.setFechaActualizacion(LocalDate.now());
 
             cliente = clienteRepo.save(cliente);
@@ -535,15 +523,6 @@ public class ClienteService {
         return clienteRepo.countByTipoIdentificacion(tipoIdentificacion);
     }
 
-    private void validarSucursal(String codigoSucursal) {
-        try {
-            generalServiceClient.validarSucursal(codigoSucursal);
-        } catch (Exception e) {
-            log.error("Error al validar sucursal: {}", codigoSucursal, e);
-            throw new ValidacionException("Código de sucursal no válido", 5001);
-        }
-    }
-
     private void validarPais(String codigoPais) {
         try {
             generalServiceClient.validarPais(codigoPais);
@@ -569,10 +548,4 @@ public class ClienteService {
         }
     }
 
-    // Método privado para validar el rango de scoreInterno
-    private void validarScoreInterno(BigDecimal scoreInterno) {
-        if (scoreInterno == null || scoreInterno.compareTo(BigDecimal.ONE) < 0 || scoreInterno.compareTo(new BigDecimal(1000)) > 0) {
-            throw new ValidacionException("El scoreInterno debe estar entre 1 y 1000", 5004);
-        }
-    }
 }

@@ -1,6 +1,7 @@
 package com.banquito.core.clientes.servicio;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.banquito.core.clientes.cliente.CuentasServiceClient;
 import com.banquito.core.clientes.cliente.CuentasServiceClient.CuentasClientesRespuestaDTO;
@@ -26,6 +27,7 @@ public class CuentasClientesService {
         return crearCuentaCliente(ID_CUENTA_MAESTRA_AHORROS, cedulaCliente);
     }
 
+    @Transactional
     public CuentasClientesRespuestaDTO crearCuentaCliente(Integer idCuentaMaestra, String cedulaCliente) {
         try {
             log.info("Creando cuenta para cliente cédula: {} con cuenta maestra ID: {}", 
@@ -78,6 +80,7 @@ public class CuentasClientesService {
         }
     }
 
+    @Transactional
     public CuentasClientesRespuestaDTO obtenerCuentaCliente(Integer idCuentaCliente) {
         try {
             log.info("Obteniendo cuenta cliente con ID: {}", idCuentaCliente);
@@ -105,6 +108,7 @@ public class CuentasClientesService {
     /**
      * Extrae el mensaje de error de una excepción Feign
      */
+    @Transactional
     private String extractErrorMessage(FeignException e) {
         String message = e.getMessage();
         if (message != null && message.contains("Cliente no encontrado")) {

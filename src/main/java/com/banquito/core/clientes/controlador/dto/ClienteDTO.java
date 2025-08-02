@@ -14,7 +14,6 @@ public class ClienteDTO {
     private String tipoEntidad; 
     private String idEntidad;
     private String nombre;
-    private BigDecimal scoreInterno;
     private String nacionalidad;
     private String tipoIdentificacion;
     private String numeroIdentificacion;
