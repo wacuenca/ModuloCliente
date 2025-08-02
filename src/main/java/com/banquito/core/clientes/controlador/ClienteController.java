@@ -1,5 +1,6 @@
 package com.banquito.core.clientes.controlador;
 
+import com.banquito.core.clientes.excepcion.NotFoundException;
 import com.banquito.core.clientes.servicio.ClienteService;
 import com.banquito.core.clientes.controlador.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,19 +26,20 @@ public class ClienteController {
         this.clienteService = clienteService;
     }
 
-    // ========== PERSONAS ==========
+    // ====== PERSONAS ======
+
     @PostMapping("/personas")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear persona", description = "Registra una nueva persona natural.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Persona creada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
             @ApiResponse(responseCode = "409", description = "La persona ya existe")
     })
-    public PersonaDTO crearPersona(@RequestBody PersonaDTO personaDTO) {
+    public ResponseEntity<PersonaDTO> crearPersona(@RequestBody PersonaDTO personaDTO) {
         log.info("Creando nueva persona: {} {}", personaDTO.getTipoIdentificacion(),
                 personaDTO.getNumeroIdentificacion());
-        return clienteService.crearPersona(personaDTO);
+        PersonaDTO creado = clienteService.crearPersona(personaDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @GetMapping("/personas/{tipoIdentificacion}/{numeroIdentificacion}")
@@ -46,23 +48,28 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Persona encontrada"),
             @ApiResponse(responseCode = "404", description = "Persona no encontrada")
     })
-    public PersonaDTO obtenerPersona(
+    public ResponseEntity<PersonaDTO> obtenerPersona(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion) {
         log.info("Consultando persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.obtenerPersona(tipoIdentificacion, numeroIdentificacion);
+        try {
+            PersonaDTO persona = clienteService.obtenerPersona(tipoIdentificacion, numeroIdentificacion);
+            return ResponseEntity.ok(persona);
+        } catch (NotFoundException e) {
+            log.warn("Persona no encontrada: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/personas")
     @Operation(summary = "Buscar personas por nombre", description = "Busca personas por coincidencia parcial de nombre.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
-    })
-    public List<PersonaDTO> buscarPersonas(
-            @RequestParam(required = false) String nombre,
+    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
+    public ResponseEntity<List<PersonaDTO>> buscarPersonas(
+            @RequestParam(required = false, defaultValue = "") String nombre,
             @RequestParam(defaultValue = "100") int limit) {
         log.info("Buscando personas con filtro nombre: {}", nombre);
-        return clienteService.buscarPersonas(nombre != null ? nombre : "");
+        List<PersonaDTO> lista = clienteService.buscarPersonas(nombre);
+        return ResponseEntity.ok(lista);
     }
 
     @PutMapping("/personas/{tipoIdentificacion}/{numeroIdentificacion}")
@@ -71,27 +78,34 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Persona actualizada exitosamente"),
             @ApiResponse(responseCode = "404", description = "Persona no encontrada")
     })
-    public PersonaDTO actualizarPersona(
+    public ResponseEntity<PersonaDTO> actualizarPersona(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody PersonaDTO personaDTO) {
         log.info("Actualizando persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.actualizarPersona(tipoIdentificacion, numeroIdentificacion, personaDTO);
+        try {
+            PersonaDTO actualizado = clienteService.actualizarPersona(tipoIdentificacion, numeroIdentificacion, personaDTO);
+            return ResponseEntity.ok(actualizado);
+        } catch (NotFoundException e) {
+            log.warn("Persona no encontrada: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
-    // ========== EMPRESAS ==========
+    // ====== EMPRESAS ======
+
     @PostMapping("/empresas")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear empresa", description = "Registra una nueva empresa.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Empresa creada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
             @ApiResponse(responseCode = "409", description = "La empresa ya existe")
     })
-    public EmpresasDTO crearEmpresa(@RequestBody EmpresasDTO empresasDTO) {
+    public ResponseEntity<EmpresasDTO> crearEmpresa(@RequestBody EmpresasDTO empresasDTO) {
         log.info("Creando nueva empresa: {} {}", empresasDTO.getTipoIdentificacion(),
                 empresasDTO.getNumeroIdentificacion());
-        return clienteService.crearEmpresa(empresasDTO);
+        EmpresasDTO creado = clienteService.crearEmpresa(empresasDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @GetMapping("/empresas/{tipoIdentificacion}/{numeroIdentificacion}")
@@ -100,31 +114,38 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Empresa encontrada"),
             @ApiResponse(responseCode = "404", description = "Empresa no encontrada")
     })
-    public EmpresasDTO obtenerEmpresa(
+    public ResponseEntity<EmpresasDTO> obtenerEmpresa(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion) {
         log.info("Consultando empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.obtenerEmpresa(tipoIdentificacion, numeroIdentificacion);
+        try {
+            EmpresasDTO empresa = clienteService.obtenerEmpresa(tipoIdentificacion, numeroIdentificacion);
+            return ResponseEntity.ok(empresa);
+        } catch (NotFoundException e) {
+            log.warn("Empresa no encontrada: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/empresas")
     @Operation(summary = "Buscar empresas", description = "Busca empresas por razón social o nombre comercial.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
-    })
-    public List<EmpresasDTO> buscarEmpresas(
+    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
+    public ResponseEntity<List<EmpresasDTO>> buscarEmpresas(
             @RequestParam(required = false) String razonSocial,
             @RequestParam(required = false) String nombreComercial,
             @RequestParam(defaultValue = "100") int limit) {
         log.info("Buscando empresas con filtros - razonSocial: {}, nombreComercial: {}", razonSocial, nombreComercial);
+        List<EmpresasDTO> lista;
 
         if (razonSocial != null) {
-            return clienteService.buscarEmpresasPorRazon(razonSocial);
+            lista = clienteService.buscarEmpresasPorRazon(razonSocial);
         } else if (nombreComercial != null) {
-            return clienteService.buscarEmpresasPorNombre(nombreComercial);
+            lista = clienteService.buscarEmpresasPorNombre(nombreComercial);
         } else {
             throw new IllegalArgumentException("Debe proporcionar al menos un criterio de búsqueda");
         }
+
+        return ResponseEntity.ok(lista);
     }
 
     @PutMapping("/empresas/{tipoIdentificacion}/{numeroIdentificacion}")
@@ -133,45 +154,52 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Empresa actualizada exitosamente"),
             @ApiResponse(responseCode = "404", description = "Empresa no encontrada")
     })
-    public EmpresasDTO actualizarEmpresa(
+    public ResponseEntity<EmpresasDTO> actualizarEmpresa(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody EmpresasDTO empresasDTO) {
         log.info("Actualizando empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.actualizarEmpresa(tipoIdentificacion, numeroIdentificacion, empresasDTO);
+        try {
+            EmpresasDTO actualizado = clienteService.actualizarEmpresa(tipoIdentificacion, numeroIdentificacion, empresasDTO);
+            return ResponseEntity.ok(actualizado);
+        } catch (NotFoundException e) {
+            log.warn("Empresa no encontrada: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
-    // ========== CLIENTES ==========
+    // ====== CLIENTES ======
+
     @PostMapping("/personas/{tipoIdentificacion}/{numeroIdentificacion}/clientes")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear cliente desde persona", description = "Crea un cliente a partir de una persona registrada.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cliente creado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Persona no encontrada"),
             @ApiResponse(responseCode = "409", description = "Cliente ya existe")
     })
-    public ClienteDTO crearClienteDesdePersona(
+    public ResponseEntity<ClienteDTO> crearClienteDesdePersona(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody ClienteDTO clienteDTO) {
         log.info("Creando cliente desde persona: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.crearClientePersona(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+        ClienteDTO creado = clienteService.crearClientePersona(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @PostMapping("/empresas/{tipoIdentificacion}/{numeroIdentificacion}/clientes")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crear cliente desde empresa", description = "Crea un cliente a partir de una empresa registrada.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cliente creado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Empresa no encontrada"),
             @ApiResponse(responseCode = "409", description = "Cliente ya existe")
     })
-    public ClienteDTO crearClienteDesdeEmpresa(
+    public ResponseEntity<ClienteDTO> crearClienteDesdeEmpresa(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody ClienteDTO clienteDTO) {
         log.info("Creando cliente desde empresa: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.crearClienteEmpresa(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+        ClienteDTO creado = clienteService.crearClienteEmpresa(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
     @GetMapping("/clientes/{id}")
@@ -180,67 +208,71 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
-    public ClienteDTO obtenerClientePorId(@PathVariable String id) {
+    public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable String id) {
         log.info("Consultando cliente con ID: {}", id);
-        return clienteService.obtenerCliente(id);
+        try {
+            ClienteDTO cliente = clienteService.obtenerCliente(id);
+            return ResponseEntity.ok(cliente);
+        } catch (NotFoundException e) {
+            log.warn("Cliente no encontrado: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/clientes")
     @Operation(summary = "Buscar clientes", description = "Busca clientes por nombre o identificación.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
-    })
-    public List<ClienteDTO> buscarClientes(
+    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
+    public ResponseEntity<List<ClienteDTO>> buscarClientes(
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String tipoIdentificacion,
             @RequestParam(required = false) String numeroIdentificacion,
             @RequestParam(defaultValue = "100") int limit) {
 
+        List<ClienteDTO> lista;
+
         if (nombre != null) {
             log.info("Buscando clientes por nombre: {}", nombre);
-            return clienteService.buscarClientes(nombre);
+            lista = clienteService.buscarClientes(nombre);
         } else if (tipoIdentificacion != null && numeroIdentificacion != null) {
             log.info("Buscando cliente por identificación: {} {}", tipoIdentificacion, numeroIdentificacion);
-            return List.of(clienteService.obtenerClientePorIdentificacion(tipoIdentificacion, numeroIdentificacion));
+            lista = List.of(clienteService.obtenerClientePorIdentificacion(tipoIdentificacion, numeroIdentificacion));
         } else {
             throw new IllegalArgumentException("Debe proporcionar nombre o tipo/numero de identificación");
         }
+
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/listar-por-tipo-entidad")
     @Operation(summary = "Listar clientes por tipoEntidad", description = "Lista clientes por tipoEntidad (EMPRESA o PERSONA).")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
-    })
-    public List<ClienteDTO> listarPorTipoEntidad(@RequestParam String tipoEntidad) {
-        return clienteService.listarPorTipoEntidad(tipoEntidad);
+    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
+    public ResponseEntity<List<ClienteDTO>> listarPorTipoEntidad(@RequestParam String tipoEntidad) {
+        List<ClienteDTO> lista = clienteService.listarPorTipoEntidad(tipoEntidad);
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/contar-por-tipo-entidad")
     @Operation(summary = "Contar clientes por tipoEntidad", description = "Cuenta clientes por tipoEntidad (EMPRESA o PERSONA).")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Conteo obtenido exitosamente")
-    })
-    public long contarPorTipoEntidad(@RequestParam String tipoEntidad) {
-        return clienteService.contarPorTipoEntidad(tipoEntidad);
+    @ApiResponse(responseCode = "200", description = "Conteo obtenido exitosamente")
+    public ResponseEntity<Long> contarPorTipoEntidad(@RequestParam String tipoEntidad) {
+        long conteo = clienteService.contarPorTipoEntidad(tipoEntidad);
+        return ResponseEntity.ok(conteo);
     }
 
     @GetMapping("/listar-por-tipo-identificacion")
     @Operation(summary = "Listar clientes por tipoIdentificacion", description = "Lista clientes por tipoIdentificacion (CEDULA, PASAPORTE, RUC).")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
-    })
-    public List<ClienteDTO> listarPorTipoIdentificacion(@RequestParam String tipoIdentificacion) {
-        return clienteService.listarPorTipoIdentificacion(tipoIdentificacion);
+    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente")
+    public ResponseEntity<List<ClienteDTO>> listarPorTipoIdentificacion(@RequestParam String tipoIdentificacion) {
+        List<ClienteDTO> lista = clienteService.listarPorTipoIdentificacion(tipoIdentificacion);
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/contar-por-tipo-identificacion")
     @Operation(summary = "Contar clientes por tipoIdentificacion", description = "Cuenta clientes por tipoIdentificacion (CEDULA, PASAPORTE, RUC).")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Conteo obtenido exitosamente")
-    })
-    public long contarPorTipoIdentificacion(@RequestParam String tipoIdentificacion) {
-        return clienteService.contarPorTipoIdentificacion(tipoIdentificacion);
+    @ApiResponse(responseCode = "200", description = "Conteo obtenido exitosamente")
+    public ResponseEntity<Long> contarPorTipoIdentificacion(@RequestParam String tipoIdentificacion) {
+        long conteo = clienteService.contarPorTipoIdentificacion(tipoIdentificacion);
+        return ResponseEntity.ok(conteo);
     }
 
     @PutMapping("/clientes/{tipoIdentificacion}/{numeroIdentificacion}")
@@ -249,28 +281,35 @@ public class ClienteController {
             @ApiResponse(responseCode = "200", description = "Cliente actualizado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
-    public ClienteDTO actualizarCliente(
+    public ResponseEntity<ClienteDTO> actualizarCliente(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody ClienteDTO clienteDTO) {
         log.info("Actualizando cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.actualizarCliente(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+        try {
+            ClienteDTO actualizado = clienteService.actualizarCliente(tipoIdentificacion, numeroIdentificacion, clienteDTO);
+            return ResponseEntity.ok(actualizado);
+        } catch (NotFoundException e) {
+            log.warn("Cliente no encontrado: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
-    // ========== GESTIÓN DE TELÉFONOS ==========
+    // ====== GESTIÓN DE TELÉFONOS ======
+
     @PostMapping("/clientes/{tipoIdentificacion}/{numeroIdentificacion}/telefonos")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Agregar teléfono", description = "Agrega un número telefónico a un cliente.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Teléfono agregado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
-    public ClienteDTO agregarTelefono(
+    public ResponseEntity<ClienteDTO> agregarTelefono(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody TelefonoClienteDTO telefonoDTO) {
         log.info("Agregando teléfono a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.agregarTelefonoCliente(tipoIdentificacion, numeroIdentificacion, telefonoDTO);
+        ClienteDTO actualizado = clienteService.agregarTelefonoCliente(tipoIdentificacion, numeroIdentificacion, telefonoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(actualizado);
     }
 
     @DeleteMapping("/clientes/{tipoIdentificacion}/{numeroIdentificacion}/telefonos/{indice}")
@@ -284,41 +323,41 @@ public class ClienteController {
             @PathVariable String numeroIdentificacion,
             @PathVariable int indice) {
         log.info("Inactivando teléfono {} del cliente: {} {}", indice, tipoIdentificacion, numeroIdentificacion);
-        ClienteDTO clienteActualizado = clienteService.eliminarTelefonoCliente(tipoIdentificacion, numeroIdentificacion,
-                indice);
-        return ResponseEntity.ok(clienteActualizado);
+        ClienteDTO actualizado = clienteService.eliminarTelefonoCliente(tipoIdentificacion, numeroIdentificacion, indice);
+        return ResponseEntity.ok(actualizado);
     }
 
-    // ========== GESTIÓN DE DIRECCIONES ==========
+    // ====== GESTIÓN DE DIRECCIONES ======
+
     @PostMapping("/clientes/{tipoIdentificacion}/{numeroIdentificacion}/direcciones")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Agregar dirección", description = "Agrega una nueva dirección al cliente.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Dirección agregada exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
-    public ClienteDTO agregarDireccion(
+    public ResponseEntity<ClienteDTO> agregarDireccion(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody DireccionClienteDTO direccionDTO) {
         log.info("Agregando dirección a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.agregarDireccionCliente(tipoIdentificacion, numeroIdentificacion, direccionDTO);
+        ClienteDTO actualizado = clienteService.agregarDireccionCliente(tipoIdentificacion, numeroIdentificacion, direccionDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(actualizado);
     }
 
-    // ========== GESTIÓN DE SUCURSALES ==========
+    // ====== GESTIÓN DE SUCURSALES ======
+
     @PostMapping("/clientes/{tipoIdentificacion}/{numeroIdentificacion}/sucursales")
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Agregar sucursal", description = "Asocia una sucursal a un cliente.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Sucursal asociada exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
     })
-    public ClienteDTO agregarSucursal(
+    public ResponseEntity<ClienteDTO> agregarSucursal(
             @PathVariable String tipoIdentificacion,
             @PathVariable String numeroIdentificacion,
             @RequestBody ClienteSucursalDTO sucursalDTO) {
         log.info("Agregando sucursal a cliente: {} {}", tipoIdentificacion, numeroIdentificacion);
-        return clienteService.agregarSucursalCliente(tipoIdentificacion, numeroIdentificacion, sucursalDTO);
+        ClienteDTO actualizado = clienteService.agregarSucursalCliente(tipoIdentificacion, numeroIdentificacion, sucursalDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(actualizado);
     }
-
 }
