@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/clientes/{idCliente}/contactos-transaccionales")
+@RequestMapping("/api/clientes/v1/{idCliente}/contactos-transaccionales")
 @Tag(name = "Contactos Transaccionales", description = "Gestión de contactos transaccionales asociados a los clientes")
 public class ContactosTransaccionalesClientesControlador {
 

@@ -19,7 +19,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/empresas/{idEmpresa}")
+@RequestMapping("/api/clientes/v1/empresas/{idEmpresa}")
 @Tag(name = "Accionistas y Representantes", description = "Gestiona los accionistas y representantes legales de empresas")
 public class AccionistaRepresentanteController {
 

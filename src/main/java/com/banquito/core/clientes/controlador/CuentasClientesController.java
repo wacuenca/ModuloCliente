@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.banquito.core.clientes.cliente.CuentasServiceClient.CuentasClientesRespuestaDTO;
@@ -20,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/clientes/v1")
 @Tag(name = "Cuentas Clientes", description = "Gestión de cuentas de clientes a través del microservicio de cuentas")
 public class CuentasClientesController {
 

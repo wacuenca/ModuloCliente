@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/clientes")
+@RequestMapping("/api/clientes/v1/clientes")
 @Tag(name = "Clientes", description = "Gestión de personas, empresas y clientes")
 public class ClienteController {
 
