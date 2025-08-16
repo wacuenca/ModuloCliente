@@ -2,7 +2,7 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-COPY target/formalizacion-0.0.1-SNAPSHOT.jar app.jar
+COPY target/clientes-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 80
 
