@@ -17,7 +17,7 @@ public class CuentasClientesService {
 
     private final CuentasServiceClient cuentasServiceClient;
     
-    private static final Integer ID_CUENTA_MAESTRA_AHORROS = 27;
+    private static final Integer ID_CUENTA_MAESTRA_AHORROS = 1;
 
     public CuentasClientesService(CuentasServiceClient cuentasServiceClient) {
         this.cuentasServiceClient = cuentasServiceClient;

@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 )
 public interface CuentasServiceClient {
     
-    @PostMapping("/api/v1/cuentas-clientes")
+    @PostMapping("/v1/cuentas-clientes")
     ResponseEntity<CuentasClientesRespuestaDTO> crearCuentaAutomatica(@RequestBody CuentasClientesSolicitudDTO request);
     
     @GetMapping("/api/v1/cuentas/{id}")
