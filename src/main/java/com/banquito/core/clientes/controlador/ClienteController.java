@@ -16,7 +16,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/clientes/v1/clientes")
+@RequestMapping("/v1/clientes")
 @CrossOrigin(origins = "*")
 @Tag(name = "Clientes", description = "Gestión de personas, empresas y clientes")
 public class ClienteController {

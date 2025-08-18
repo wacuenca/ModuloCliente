@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/clientes/v1")
+@RequestMapping("/v1")
 @Tag(name = "Cuentas Clientes", description = "Gestión de cuentas de clientes a través del microservicio de cuentas")
 public class CuentasClientesController {
 
